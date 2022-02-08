@@ -9,4 +9,4 @@ No. JPEG is smarter, more sofisticated and better in every single way.
 
 ## Credits
 
-Original concept and implementation done by sr. Sánchez. As it was done originally in JavaScript, this is a much faster reimplemantation written in Julia. 
+Original concept and implementation done by the great sr. Sánchez, my math teacher. However, his version used JavaScript, so this is a much need, much faster reimplemantation written in Julia. 
