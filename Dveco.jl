@@ -25,7 +25,7 @@ using PlutoUI
 
 # ╔═╡ 670a7c9a-7dd9-11ec-2f9e-5daa27e49f3c
 md"""
-# Non-jpeg image compression
+# Dveco, non-jpeg image compression
 For Pablo
 """
 
@@ -998,7 +998,7 @@ version = "16.2.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─670a7c9a-7dd9-11ec-2f9e-5daa27e49f3c
+# ╠═670a7c9a-7dd9-11ec-2f9e-5daa27e49f3c
 # ╟─8e642f27-ea51-4cf1-b798-d8a586770b57
 # ╠═4478d0a8-360a-4792-8859-244d80d2902b
 # ╠═0e4ef764-37f3-4db8-b7d5-2d40d81e2797
