@@ -169,11 +169,11 @@ function show_compressed(channel::Channel, threshold::Number)
 end
 
 # ╔═╡ 347f8c01-96d6-41d0-a785-15e51886f89d
-# begin
-# 	url = "https://upload.wikimedia.org/wikipedia/commons/3/39/GodfreyKneller-IsaacNewton-1689.jpg" 
-# 	philip_filename = download(url)
-# 	test = load(philip_filename)
-# end
+begin
+	url = "https://upload.wikimedia.org/wikipedia/commons/3/39/GodfreyKneller-IsaacNewton-1689.jpg" 
+	philip_filename = download(url)
+	test = load(philip_filename)
+end
 
 # ╔═╡ c32aeff2-72d4-4869-aaa7-e9bb26d59ab8
 @bind threshold_bnw Slider(0.3:-0.001:0)
@@ -195,41 +195,15 @@ function compress_by_channel(image::Image, threshold::Number)
 	compress.(channels(image), threshold)
 end
 
-# ╔═╡ 4e10859e-c2bb-44d4-93cd-df6b19e52b05
-md"""
-### By luminance?
-"""
-
-# ╔═╡ d5fb4aec-a3c7-4711-9a3f-fbde577d85a9
-function compress_by_luminance(image::Image, threshold::Number, color_loss_factor::Number)
-	lum = compress(luminance(image), threshold)
-	col = compress_by_channel(image, threshold * color_loss_factor)
-	(lum = lum, col = col)
-end
-
-# ╔═╡ 21a1cd84-dbdc-496a-a450-c346c3fb6df0
-function reconstruct_by_luminance(compressed)
-	lum = reconstruct(compressed.lum)
-	col = reconstruct.(compressed.col)
-	col = [RGB(r, g, b) for (r, g, b) in zip(col...)]
-	lum .* col
-end
-
-# ╔═╡ 31a993ff-3559-4cdf-8443-f143bd13a4e6
-function show_by_luminance(image::Image, threshold::Number, factor::Number)
-	comp = compress_by_luminance(image, threshold, factor)
-	lum = reconstruct(comp.lum)
-	col = reconstruct.(comp.col)
-	col = [RGB(r, g, b) for (r, g, b) in zip(col...)]
-	lum .* col
-end
-
 # ╔═╡ 8802eb09-e619-4d04-ae11-37fb19649fa1
-function show_compressed(image::Image, threshold::Number, algorithm=compress_by_channel)
-	comp = algorithm(image, threshold)
+function show_compressed(image::Image, threshold::Number)
+	comp = compress_by_channel(image, threshold)
 	comp = reconstruct.(comp)
 	[RGB(r, g, b) for (r, g, b) in zip(comp...)]
 end
+
+# ╔═╡ 7cfd7bc3-fcd6-4034-9d8d-36a87eac1627
+show_compressed(luminance(test), threshold_bnw)
 
 # ╔═╡ c4d5c2f5-6603-4309-8fbf-ed41a8e90675
 md"""
@@ -239,7 +213,7 @@ Rudimentary.
 """
 
 # ╔═╡ e0452dc4-8bd1-470a-9cfd-782dfc4e301e
-function filesize(pixel::Float64, size_per_pixel = 3)
+function filesize(pixel::Real, size_per_pixel = 3)
 	return 1
 end
 
@@ -257,13 +231,16 @@ function filesize(pixel::FancyPixel, size_per_pixel = 3)
 	size_per_pixel
 end
 
+# ╔═╡ bf58ce82-c5ec-416b-8d42-d5673c2d156d
+filesize(compress(luminance(test), 0.01))
+
 # ╔═╡ 3ce732b7-d7fd-434b-95f9-f37c33192934
 function compression_quality(original::Channel, compressed::Channel)
 	sum([abs(o - c) for (o, c) in zip(original, compressed)])
 end
 
 # ╔═╡ 2db8f5bc-0b2a-4a1e-9cdb-125af1b001c4
-function compression_ratio(image::Image, threshold::Number)
+function compression_stats(image::Image, threshold::Number)
 	s = size(image)
 	original = s[1] * s[2] * 3
 	compressed = compress_by_channel(image, threshold)
@@ -275,14 +252,42 @@ function compression_ratio(image::Image, threshold::Number)
 		diff += colordiff(o, p)
 	end
 
-	(original = original, 
-	comp_size = csize, 
+	(original_in_kb = original/1000, 
+	comp_size_in_kb = csize/1000, 
 	ratio = csize/original, 
 	diff = diff)
 end
 
+# ╔═╡ 449a2e13-fe1f-49f8-a16d-7d160d396aa2
+md"""
+### Compression given a threshold
+"""
+
 # ╔═╡ 92c2398d-e393-48b3-a795-2a4afc799613
 @bind threshold_color Slider(0.3:-0.001:0)
+
+# ╔═╡ cb3e9ead-2e22-4b94-9ac2-8b63808df445
+show_compressed(test, threshold_color)
+
+# ╔═╡ 02839b7d-9944-4430-909a-cdba85cc64c2
+compression_stats(test, threshold_color)
+
+# ╔═╡ 703cf884-aa9a-4387-9a1b-afebdae5530e
+md"Threshold is: $threshold_color"
+
+# ╔═╡ 8ab423a8-4b33-477c-b445-1a10f86c260e
+show_compressed(test, threshold_color)
+
+# ╔═╡ 4b0750aa-70df-4bbe-8d90-fafea639f9af
+md"""
+### Average RGB
+"""
+
+# ╔═╡ c7404c7e-f847-4c27-be83-d8798a3c5dde
+let
+	c = mean([p for p in test])
+	(r=c.r, g=c.g, b=c.b)
+end
 
 # ╔═╡ c3221ca6-7023-4bcc-865a-8c754ff45182
 md"""
@@ -291,6 +296,14 @@ md"""
 
 # ╔═╡ dab7a6d7-a679-41f6-ab05-cf0a6cc5418c
 plotly()
+
+# ╔═╡ 220b0f16-4569-4187-a4e9-badf4dca946e
+md"""
+Collecting the data takes a good while (~20s)
+"""
+
+# ╔═╡ 8db87c95-64d6-4176-830a-c906c21125da
+compression_stats(test, 0.3)
 
 # ╔═╡ cc3a57d7-ee3b-4975-9973-bad0bb9f2f53
 md"""
@@ -303,8 +316,32 @@ model(t, p) = p[1] * exp.(-p[2] * t)
 # ╔═╡ c0e07072-6c6e-4ec5-9795-bc5d6bb74fe7
 tdata = 0.3:-0.01:0
 
-# ╔═╡ 09813781-4c50-4400-896b-7c3defae71db
-p0 = [0.5, 0.5]
+# ╔═╡ 01b82335-b1bd-457a-8bf8-9ec3de0bd375
+test_data = [compression_stats(test, x) for x in tdata]
+
+# ╔═╡ 0fc5c49f-2f2d-419e-a0cb-76a53b641fbe
+let
+	range = tdata
+	canvas = plot(; xaxis="std threshold")
+	plot!(range, [d.ratio for d in test_data], label="compression ratio")
+	plot!(range, [1 / (log(100, d.diff + 1) + 1) for d in test_data], label="compression quality")
+end
+
+# ╔═╡ 4973ccbb-ea9b-49c3-b549-7b53c14dd685
+begin
+	fit1 = curve_fit(model, tdata, [d.ratio for d in test_data], [0.5, 0.5])
+	p1 = fit1.param
+	
+	fit2 = curve_fit(model, tdata, [d.diff for d in test_data], [0.5, 0.5])
+	p2 = fit2.param
+	(ratio = p1, quality = p2)
+end
+
+# ╔═╡ 2b53da0c-c5dc-4788-9f28-36f5bb822559
+plot(tdata, [model(t, p1) for t in tdata], label="ratio")
+
+# ╔═╡ a772b2ce-5ef8-47a4-952b-683796fe3959
+plot(tdata, [model(t, p2) for t in tdata], label="difference")
 
 # ╔═╡ 133d23fa-d7d3-4dc8-b1f4-c8f068a8c07f
 function camera_input(;max_size=500, default_url="https://i.imgur.com/SUmi94P.png")
@@ -510,9 +547,6 @@ function camera_input(;max_size=500, default_url="https://i.imgur.com/SUmi94P.pn
 """ |> HTML
 end
 
-# ╔═╡ 9ba83985-2626-4468-b0d5-a2803864b12f
-@bind webcam_data1 camera_input(max_size=10000)
-
 # ╔═╡ 5adf6861-9a4e-4347-8770-47df895038a6
 function process_raw_camera_data(raw_camera_data)
 	# the raw image data is a long byte array, we need to transform it into something
@@ -546,53 +580,6 @@ function process_raw_camera_data(raw_camera_data)
 	
 	return RGB.(reds, greens, blues)
 end
-
-# ╔═╡ 2569fdbf-e2b5-4ee4-8608-41529496eadb
-test = process_raw_camera_data(webcam_data1);
-
-# ╔═╡ 7cfd7bc3-fcd6-4034-9d8d-36a87eac1627
-show_compressed(luminance(test), threshold_bnw)
-
-# ╔═╡ cb3e9ead-2e22-4b94-9ac2-8b63808df445
-show_compressed(test, threshold_color)
-
-# ╔═╡ bf58ce82-c5ec-416b-8d42-d5673c2d156d
-filesize(compress(luminance(test), 0.01))
-
-# ╔═╡ 02839b7d-9944-4430-909a-cdba85cc64c2
-compression_ratio(test, threshold_color)
-
-# ╔═╡ 8ab423a8-4b33-477c-b445-1a10f86c260e
-show_compressed(test, threshold_color)
-
-# ╔═╡ 01b82335-b1bd-457a-8bf8-9ec3de0bd375
-test_data = [compression_ratio(test, x) for x in tdata]
-
-# ╔═╡ 0fc5c49f-2f2d-419e-a0cb-76a53b641fbe
-let
-	range = tdata
-	canvas = plot(; xaxis="std threshold")
-	plot!(range, [d.ratio for d in test_data], label="compression ratio")
-	plot!(range, [1 / (log(100, d.diff + 1) + 1) for d in test_data], label="compression quality")
-end
-
-# ╔═╡ 6f592852-b311-4e6c-8595-d8f2042445ff
-ydata = [d.ratio for d in test_data]
-
-# ╔═╡ 4973ccbb-ea9b-49c3-b549-7b53c14dd685
-fit = curve_fit(model, tdata, ydata, p0)
-
-# ╔═╡ 3b20aaee-9843-4984-89f5-2df39c5e3e22
-p = fit.param
-
-# ╔═╡ 2b53da0c-c5dc-4788-9f28-36f5bb822559
-let
-	range = 0.3:-0.001:0
-	plot(range, [model(t, p) for t in range])
-end
-
-# ╔═╡ 8db87c95-64d6-4176-830a-c906c21125da
-compression_ratio(test, 0.3)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1919,18 +1906,12 @@ version = "0.9.1+5"
 # ╠═2fe9e1dc-81ab-450c-9544-6429c2a80d6b
 # ╟─c7cbae3a-248e-4f9a-ba42-b2c94a570665
 # ╠═98eb608b-c7f1-45a0-911c-4d5ef1a1fdc5
-# ╠═9ba83985-2626-4468-b0d5-a2803864b12f
-# ╠═2569fdbf-e2b5-4ee4-8608-41529496eadb
 # ╠═347f8c01-96d6-41d0-a785-15e51886f89d
 # ╠═c32aeff2-72d4-4869-aaa7-e9bb26d59ab8
 # ╠═7cfd7bc3-fcd6-4034-9d8d-36a87eac1627
 # ╟─751e0e94-7899-4c25-8519-6ce98b7b5f24
 # ╠═cf2d80f0-9b2a-4162-a1b5-acc41a3dedcc
 # ╠═0320566c-c8ca-4696-9aff-4d737be2ea97
-# ╟─4e10859e-c2bb-44d4-93cd-df6b19e52b05
-# ╠═d5fb4aec-a3c7-4711-9a3f-fbde577d85a9
-# ╠═21a1cd84-dbdc-496a-a450-c346c3fb6df0
-# ╠═31a993ff-3559-4cdf-8443-f143bd13a4e6
 # ╠═8802eb09-e619-4d04-ae11-37fb19649fa1
 # ╠═cb3e9ead-2e22-4b94-9ac2-8b63808df445
 # ╟─c4d5c2f5-6603-4309-8fbf-ed41a8e90675
@@ -1940,12 +1921,17 @@ version = "0.9.1+5"
 # ╠═bf58ce82-c5ec-416b-8d42-d5673c2d156d
 # ╠═3ce732b7-d7fd-434b-95f9-f37c33192934
 # ╠═2db8f5bc-0b2a-4a1e-9cdb-125af1b001c4
+# ╟─449a2e13-fe1f-49f8-a16d-7d160d396aa2
 # ╠═02839b7d-9944-4430-909a-cdba85cc64c2
-# ╠═92c2398d-e393-48b3-a795-2a4afc799613
+# ╟─703cf884-aa9a-4387-9a1b-afebdae5530e
+# ╟─92c2398d-e393-48b3-a795-2a4afc799613
 # ╠═8ab423a8-4b33-477c-b445-1a10f86c260e
+# ╟─4b0750aa-70df-4bbe-8d90-fafea639f9af
+# ╠═c7404c7e-f847-4c27-be83-d8798a3c5dde
 # ╟─c3221ca6-7023-4bcc-865a-8c754ff45182
 # ╠═a3966b72-930d-4485-94f7-177c3c5a7391
 # ╠═dab7a6d7-a679-41f6-ab05-cf0a6cc5418c
+# ╟─220b0f16-4569-4187-a4e9-badf4dca946e
 # ╠═01b82335-b1bd-457a-8bf8-9ec3de0bd375
 # ╠═0fc5c49f-2f2d-419e-a0cb-76a53b641fbe
 # ╠═8db87c95-64d6-4176-830a-c906c21125da
@@ -1953,11 +1939,9 @@ version = "0.9.1+5"
 # ╠═c4c0dd00-655c-419a-9b8d-3afb78f139b1
 # ╠═d3d3b840-70ef-4c4d-932f-0c259682d141
 # ╠═c0e07072-6c6e-4ec5-9795-bc5d6bb74fe7
-# ╠═6f592852-b311-4e6c-8595-d8f2042445ff
-# ╠═09813781-4c50-4400-896b-7c3defae71db
 # ╠═4973ccbb-ea9b-49c3-b549-7b53c14dd685
-# ╠═3b20aaee-9843-4984-89f5-2df39c5e3e22
 # ╠═2b53da0c-c5dc-4788-9f28-36f5bb822559
+# ╠═a772b2ce-5ef8-47a4-952b-683796fe3959
 # ╟─133d23fa-d7d3-4dc8-b1f4-c8f068a8c07f
 # ╟─5adf6861-9a4e-4347-8770-47df895038a6
 # ╟─00000000-0000-0000-0000-000000000001
